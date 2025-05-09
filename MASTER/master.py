@@ -172,6 +172,14 @@ class Gate(nn.Module):
 class TemporalAttention(nn.Module):
     """
         Input: (N, T, D)
+
+        This code takes the input as a batch N of stocks and for each stock it computes
+        a softmax over the temporal dimension T. Then performs a weighted sum for each stock of the embedding
+        D multiplied by the softmax weights. 
+        The output is a tensor of shape (N, D) where each stock is represented by a single datapoin that is the aggregation
+        of the temporal dimension T.
+  
+
     """
 
     def __init__(self, d_model):
@@ -182,7 +190,7 @@ class TemporalAttention(nn.Module):
         h = self.trans(z) # [N, T, D]
         query = h[:, -1, :].unsqueeze(-1)     # mio: [N, D] --> [N, D, 1]
         lam = torch.matmul(h, query).squeeze(-1)  #  [N, T, D] @ [N, D, 1] → [N, T, 1] → [N, T]
-        lam = torch.softmax(lam, dim=1).unsqueeze(1)
+        lam = torch.softmax(lam, dim=1).unsqueeze(1) # [N, 1, T]
         output = torch.matmul(lam, z).squeeze(1)  # [N, 1, T], [N, T, D] --> [N, 1, D]
         return output
 
