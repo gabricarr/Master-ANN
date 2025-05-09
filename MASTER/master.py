@@ -180,7 +180,7 @@ class TemporalAttention(nn.Module):
 
     def forward(self, z):
         h = self.trans(z) # [N, T, D]
-        query = h[:, -1, :].unsqueeze(-1)
+        query = h[:, -1, :].unsqueeze(-1)     # mio: [N, T, D] --> [N, D]
         lam = torch.matmul(h, query).squeeze(-1)  # [N, T, D] --> [N, T]
         lam = torch.softmax(lam, dim=1).unsqueeze(1)
         output = torch.matmul(lam, z).squeeze(1)  # [N, 1, T], [N, T, D] --> [N, 1, D]
