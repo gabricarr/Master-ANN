@@ -213,13 +213,13 @@ class MASTER(nn.Module):
             SAttention(d_model=d_model, nhead=s_nhead, dropout=S_dropout_rate),
             TemporalAttention(d_model=d_model),
             # decoder
-            nn.Linear(d_model, 1)
+            nn.Linear(d_model, 1) # N, 1
         )
 
     def forward(self, x):
         src = x[:, :, :self.gate_input_start_index] # N, T, D
         gate_input = x[:, -1, self.gate_input_start_index:self.gate_input_end_index]
-        src = src * torch.unsqueeze(self.feature_gate(gate_input), dim=1)
+        src = src * torch.unsqueeze(self.feature_gate(gate_input), dim=1) # element wise multiplication [N, T, D] * [N, 1, D]
        
         output = self.layers(src).squeeze(-1)
 
