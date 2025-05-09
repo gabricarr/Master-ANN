@@ -160,7 +160,7 @@ class Gate(nn.Module):
     def __init__(self, d_input, d_output,  beta=1.0):
         super().__init__()
         self.trans = nn.Linear(d_input, d_output)
-        self.d_output =d_output
+        self.d_output = d_output
         self.t = beta
 
     def forward(self, gate_input):
@@ -179,7 +179,6 @@ class TemporalAttention(nn.Module):
         The output is a tensor of shape (N, D) where each stock is represented by a single datapoin that is the aggregation
         of the temporal dimension T.
   
-
     """
 
     def __init__(self, d_model):
