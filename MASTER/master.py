@@ -8,6 +8,11 @@ import math
 from base_model import SequenceModel
 
 
+# (N, T, D) where:
+# - N is the number of stocks
+# - T is the lookback window
+# - D is the feature dimension)
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=100):
         super(PositionalEncoding, self).__init__()
@@ -22,7 +27,15 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:x.shape[1], :]
 
 
+# This is the same attention as TAttention but it is done over the batch dimension and not over the temporal one
 class SAttention(nn.Module):
+    """
+    Input: (N, T, D)
+    Transpose: (T, N, D)
+    Output: (N, T, D)      (same dimensions as input)
+    
+    
+    """
     def __init__(self, d_model, nhead, dropout):
         super().__init__()
 
@@ -54,7 +67,7 @@ class SAttention(nn.Module):
 
     def forward(self, x):
         x = self.norm1(x)
-        q = self.qtrans(x).transpose(0,1)
+        q = self.qtrans(x).transpose(0,1)   # Here we swap position from attention over a single stock to attention over the input batch N
         k = self.ktrans(x).transpose(0,1)
         v = self.vtrans(x).transpose(0,1)
 
@@ -157,6 +170,10 @@ class Gate(nn.Module):
 
 
 class TemporalAttention(nn.Module):
+    """
+        Input: (N, T, D)
+    """
+
     def __init__(self, d_model):
         super().__init__()
         self.trans = nn.Linear(d_model, d_model, bias=False)
