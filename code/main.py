@@ -1,4 +1,4 @@
-from master import MASTERModel
+from code.master_bert import MASTERModel
 import pickle
 import numpy as np
 import time
