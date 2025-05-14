@@ -49,15 +49,18 @@ import pandas as pd
 sample_csv = 'data/enriched/market_indexes_aggregated.csv'
 dates = pd.read_csv(sample_csv)['Date'].tolist()
 
-dataset = StockTensorDataset(data_tensor, stock_names, dates)
-
-N = len(dataset)
+N = data_tensor.shape[0]
 train_end = int(N * 0.8)
 val_end = int(N * 0.9)
 
-dl_train = dataset[:train_end]
-dl_valid = dataset[train_end:val_end]
-dl_test = dataset[val_end:]
+# Split the underlying tensor and stock_names, but keep all dates
+dl_train = StockTensorDataset(data_tensor[:train_end], stock_names[:train_end], dates)
+dl_valid = StockTensorDataset(data_tensor[train_end:val_end], stock_names[train_end:val_end], dates)
+dl_test = StockTensorDataset(data_tensor[val_end:], stock_names[val_end:], dates)
+
+print("Train size:", len(dl_train))
+print("Val size:", len(dl_valid))
+print("Test size:", len(dl_test))
 
 
 
