@@ -1,11 +1,42 @@
-from code.master_bert import MASTERModel
+from master_bert import MASTERModel
 import pickle
 import numpy as np
 import time
 
+from utils import load_all_csv_data_with_market_indexes, load_all_csv_data_without_index
+
 # Please install qlib first before load the data.
 
-universe = 'csi300' # ['csi300','csi800']
+# Load data without market indexes
+stock_data, stock_names, features_names = load_all_csv_data_without_index()
+
+# Load data with market indexes
+# stock_data, stock_names, features_names = load_all_csv_data_with_market_indexes()
+
+# Print the shape of the data
+if stock_data is not None:
+    print("Data shape:", stock_data.shape)
+    print("Data loaded successfully.")
+
+
+# Size without market indexes: 224
+# Size with market indexes: 276
+
+
+
+
+
+
+
+
+
+
+
+exit(1)
+
+
+
+universe = 'sp500' # ['csi300','csi800']
 prefix = 'opensource' # ['original','opensource'], which training data are you using
 train_data_dir = f'data'
 with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
