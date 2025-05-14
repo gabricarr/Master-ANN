@@ -88,3 +88,29 @@ def load_all_csv_data_with_market_indexes(
 
 # market_indexes = pd.read_csv('data/enriched/market_indexes_aggregated.csv')
 # print("Market indexes shape:", market_indexes.shape)
+
+
+
+# Code to check later
+class StockTensorDataset(torch.utils.data.Dataset):
+    def __init__(self, data_tensor, stock_names, dates):
+        self.data = data_tensor
+        self.stock_names = stock_names
+        self.dates = dates  # list of dates, length T
+
+        # Build MultiIndex: one row per (date, stock)
+        tuples = []
+        N, T, _ = self.data.shape
+        for i, stock in enumerate(self.stock_names):
+            for date in self.dates:
+                tuples.append((date, stock))
+        self.index = pd.MultiIndex.from_tuples(tuples, names=['datetime', 'stock'])
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+    def get_index(self):
+        return self.index

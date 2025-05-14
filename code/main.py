@@ -3,41 +3,61 @@ import pickle
 import numpy as np
 import time
 
-from utils import load_all_csv_data_with_market_indexes, load_all_csv_data_without_index
+from utils import load_all_csv_data_with_market_indexes, load_all_csv_data_without_index, StockTensorDataset
 
 # Please install qlib first before load the data.
 
-# Load data without market indexes
-stock_data, stock_names, features_names = load_all_csv_data_without_index()
+# # Load data without market indexes
+# stock_data, stock_names, features_names = load_all_csv_data_without_index()
 
+# # Load data with market indexes
+# # stock_data, stock_names, features_names = load_all_csv_data_with_market_indexes()
+
+# # Print the shape of the data
+# if stock_data is not None:
+#     print("Data shape:", stock_data.shape)
+#     print("Data loaded successfully.")
+
+
+# # Size without market indexes: 224
+# # Size with market indexes: 276
+
+
+# # Split into train, val, test (80%, 10%, 10%)
+# N = stock_data.shape[0]
+# train_end = int(N * 0.8)
+# val_end = int(N * 0.9)
+
+# dl_train = stock_data[:train_end]
+# dl_valid = stock_data[train_end:val_end]
+# dl_test = stock_data[val_end:]
+
+# print("Train shape:", dl_train.shape)
+# print("Val shape:", dl_valid.shape)
+# print("Test shape:", dl_test.shape)
+
+
+
+# New version
 # Load data with market indexes
-# stock_data, stock_names, features_names = load_all_csv_data_with_market_indexes()
+data_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes()
 
-# Print the shape of the data
-if stock_data is not None:
-    print("Data shape:", stock_data.shape)
-    print("Data loaded successfully.")
+print("Data shape:", data_tensor.shape)
 
+import pandas as pd
+# Get dates from one of the CSVs (assuming all have the same dates)
+sample_csv = 'data/enriched/market_indexes_aggregated.csv'
+dates = pd.read_csv(sample_csv)['Date'].tolist()
 
-# Size without market indexes: 224
-# Size with market indexes: 276
+dataset = StockTensorDataset(data_tensor, stock_names, dates)
 
-
-# Split into train, val, test (80%, 10%, 10%)
-N = stock_data.shape[0]
+N = len(dataset)
 train_end = int(N * 0.8)
 val_end = int(N * 0.9)
 
-dl_train = stock_data[:train_end]
-dl_valid = stock_data[train_end:val_end]
-dl_test = stock_data[val_end:]
-
-print("Train shape:", dl_train.shape)
-print("Val shape:", dl_valid.shape)
-print("Test shape:", dl_test.shape)
-
-
-
+dl_train = dataset[:train_end]
+dl_valid = dataset[train_end:val_end]
+dl_test = dataset[val_end:]
 
 
 
