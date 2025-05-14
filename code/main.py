@@ -23,6 +23,18 @@ if stock_data is not None:
 # Size with market indexes: 276
 
 
+# Split into train, val, test (80%, 10%, 10%)
+N = stock_data.shape[0]
+train_end = int(N * 0.8)
+val_end = int(N * 0.9)
+
+dl_train = stock_data[:train_end]
+dl_valid = stock_data[train_end:val_end]
+dl_test = stock_data[val_end:]
+
+print("Train shape:", dl_train.shape)
+print("Val shape:", dl_valid.shape)
+print("Test shape:", dl_test.shape)
 
 
 
@@ -30,39 +42,37 @@ if stock_data is not None:
 
 
 
-
-
-exit(1)
+# exit(1)
 
 
 
-universe = 'sp500' # ['csi300','csi800']
-prefix = 'opensource' # ['original','opensource'], which training data are you using
-train_data_dir = f'data'
-with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
-    dl_train = pickle.load(f)
+# universe = 'sp500' # ['csi300','csi800']
+# prefix = 'opensource' # ['original','opensource'], which training data are you using
+# train_data_dir = f'data'
+# with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
+#     dl_train = pickle.load(f)
 
-predict_data_dir = f'data\opensource'
-with open(f'{predict_data_dir}\{universe}_dl_valid.pkl', 'rb') as f:
-    dl_valid = pickle.load(f)
-with open(f'{predict_data_dir}\{universe}_dl_test.pkl', 'rb') as f:
-    dl_test = pickle.load(f)
+# predict_data_dir = f'data\opensource'
+# with open(f'{predict_data_dir}\{universe}_dl_valid.pkl', 'rb') as f:
+#     dl_valid = pickle.load(f)
+# with open(f'{predict_data_dir}\{universe}_dl_test.pkl', 'rb') as f:
+#     dl_test = pickle.load(f)
 
-print("Data Loaded.")
+# print("Data Loaded.")
 
-
-d_feat = 158
-d_model = 256
+universe = 'sp500'
+d_feat = 224
+d_model = 276
 t_nhead = 4
 s_nhead = 2
 dropout = 0.5
 gate_input_start_index = 158
 gate_input_end_index = 221
 
-if universe == 'csi300':
+if universe == 'sp500':
     beta = 5
-elif universe == 'csi800':
-    beta = 2
+else:
+    raise ValueError("Invalid universe")
 
 n_epoch = 1
 lr = 1e-5
@@ -77,12 +87,12 @@ ricir = []
 
 # Training
 ######################################################################################
-'''for seed in [0, 1, 2, 3, 4]:
+for seed in [0, 1, 2, 3, 4]:
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
         n_epochs=n_epoch, lr = lr, GPU = GPU, seed = seed, train_stop_loss_thred = train_stop_loss_thred,
-        save_path='model', save_prefix=f'{universe}_{prefix}'
+        save_path='model', save_prefix=f'{universe}'
     )
 
     start = time.time()
@@ -102,8 +112,13 @@ ricir = []
     ic.append(metrics['IC'])
     icir.append(metrics['ICIR'])
     ric.append(metrics['RIC'])
-    ricir.append(metrics['RICIR'])'''
+    ricir.append(metrics['RICIR'])
 ######################################################################################
+
+
+exit(1)
+
+
 
 # Load and Test
 ######################################################################################
