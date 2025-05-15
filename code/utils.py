@@ -88,10 +88,10 @@ def load_all_csv_data_with_market_indexes(
 
 
 
+
+
 # market_indexes = pd.read_csv('data/enriched/market_indexes_aggregated.csv')
 # print("Market indexes shape:", market_indexes.shape)
-
-
 
 
 

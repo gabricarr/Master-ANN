@@ -55,7 +55,7 @@ print("Test shape:", dl_test.shape)
 
 
 
-# exit(1)
+exit(1)
 
 
 
