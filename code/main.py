@@ -53,6 +53,9 @@ df_raw[("label", "FWD_RET")] = (
       .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
 )
 
+last_date = dates.iloc[-1]
+df_raw = df_raw.drop(index=last_date, level="datetime")
+
 # handler with learn / infer processors ------------------------
 # proc_feat = [
 #     {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
@@ -66,8 +69,8 @@ df_raw[("label", "FWD_RET")] = (
 proc_feat = [
     {"class": "Fillna",          # <— correct name
      "kwargs": {"fields_group": "feature", "fill_value": 0}},  # zero-fill; choose ffill/bfill/etc. if you like
-    {"class": "CSZScoreNorm",
-     "kwargs": {"fields_group": "feature"}},
+    # {"class": "CSZScoreNorm",
+    #  "kwargs": {"fields_group": "feature"}},
 ]
 
 proc_label = [{"class": "DropnaLabel"}]
@@ -82,7 +85,7 @@ handler.fit_process_data()                 # learn z-scores, etc.
 # ------------------------------------------------------------
 # 2.  Attach time splits in a TSDatasetH
 split = {
-    "train": (dates.iloc[0],              dates.iloc[int(T*0.8) - 1]),
+    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),
     "valid": (dates.iloc[int(T*0.8)],     dates.iloc[int(T*0.9) - 1]),
     "test" : (dates.iloc[int(T*0.9)],     dates.iloc[-2]),
 }
@@ -96,6 +99,10 @@ ts_ds = TSDatasetH(
 dl_train = ts_ds.prepare("train")   # ➜ TSDataSampler
 dl_valid = ts_ds.prepare("valid")
 dl_test  = ts_ds.prepare("test")
+
+
+
+
 
 print(len(dl_train), len(dl_valid), len(dl_test))
 #  → continue with your for-loop over seeds exactly as before
