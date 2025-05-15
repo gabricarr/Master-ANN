@@ -19,6 +19,8 @@ with open(os.path.join(predict_data_dir, f"{universe}_dl_test.pkl"), 'rb') as f:
     dl_test = pickle.load(f)
 
 
+print(len(dl_train), len(dl_valid), len(dl_test))
+
 # universe = 'csi300' # ['csi300','csi800']
 # prefix = 'opensource' # ['original','opensource'], which training data are you using
 # train_data_dir = f'data'

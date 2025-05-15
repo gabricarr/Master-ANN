@@ -3,41 +3,142 @@ import pickle
 import numpy as np
 import time
 
-from utils import load_all_csv_data_with_market_indexes, load_all_csv_data_without_index
+from utils import load_all_csv_data_with_market_indexes, load_all_csv_data_without_index, csvs_to_qlib_df, PandasDataLoader
 # Please install qlib first before load the data.
 
-# Load data without market indexes
-stock_data, stock_names, features_names = load_all_csv_data_without_index()
+# Qlib
+# import qlib
+# from qlib.config import REG_US           # S&P 500 is a US market
+# qlib.init(provider_uri=".", region=REG_US)   # provider_uri just needs to exist
 
-# Load data with market indexes
+
+
+
+
+# ------------------------------------------------------------
+# 1.  Init Qlib and build *one* handler
+import qlib, pandas as pd, numpy as np, torch
+qlib.init()                               # client mode is fine
+
+from qlib.data.dataset.loader import StaticDataLoader
+from qlib.data.dataset.handler import DataHandlerLP
+from qlib.data.dataset import TSDatasetH          # <-- here
+from qlib.data.dataset.processor import (
+    DropnaProcessor, CSZScoreNorm, DropnaLabel,
+)
+
+# your tensor, names, dates exactly as before  ----------------
+# stock_tensor, stock_names, feature_names = load_all_csv_data_without_index()
+stock_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes()
+N, T, K   = stock_tensor.shape
+print("Shape: ", stock_tensor.shape)
+# dates     = pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+dates = pd.to_datetime(                     # <-- NEW
+    pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+)
+
+# tensor ➜ tidy multi-index frame --------------------------------
+def tensor_to_df(tensor, inst, feats, dt_index):
+    flat = tensor.numpy().reshape(N * T, K)
+    idx  = pd.MultiIndex.from_product([dt_index, inst],
+                                      names=["datetime", "instrument"])
+    cols = pd.MultiIndex.from_product([["feature"], feats])
+    return pd.DataFrame(flat, index=idx, columns=cols)
+
+df_raw = tensor_to_df(stock_tensor, stock_names, feature_names, dates)
+
+# optional: build a forward-return label
+df_raw[("label", "FWD_RET")] = (
+    df_raw[("feature", "Adjusted Close")]
+      .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
+)
+
+# handler with learn / infer processors ------------------------
+# proc_feat = [
+#     {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
+#     {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
+# ]
+
+# proc_feat = [
+#     {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
+# ]
+
+proc_feat = [
+    {"class": "Fillna",          # <— correct name
+     "kwargs": {"fields_group": "feature", "fill_value": 0}},  # zero-fill; choose ffill/bfill/etc. if you like
+    {"class": "CSZScoreNorm",
+     "kwargs": {"fields_group": "feature"}},
+]
+
+proc_label = [{"class": "DropnaLabel"}]
+
+handler = DataHandlerLP(
+    data_loader      = StaticDataLoader(df_raw),
+    infer_processors = proc_feat,          # what the model will see later
+    learn_processors = proc_feat + proc_label,
+)
+handler.fit_process_data()                 # learn z-scores, etc.
+
+# ------------------------------------------------------------
+# 2.  Attach time splits in a TSDatasetH
+split = {
+    "train": (dates.iloc[0],              dates.iloc[int(T*0.8) - 1]),
+    "valid": (dates.iloc[int(T*0.8)],     dates.iloc[int(T*0.9) - 1]),
+    "test" : (dates.iloc[int(T*0.9)],     dates.iloc[-2]),
+}
+
+ts_ds = TSDatasetH(
+    handler  = handler,
+    segments = split,
+    step_len = 8,          # same window the MASTER code expects
+)
+
+dl_train = ts_ds.prepare("train")   # ➜ TSDataSampler
+dl_valid = ts_ds.prepare("valid")
+dl_test  = ts_ds.prepare("test")
+
+print(len(dl_train), len(dl_valid), len(dl_test))
+#  → continue with your for-loop over seeds exactly as before
+# ------------------------------------------------------------
+
+
+
+
+
+#############################################################################
+# # Pure tensor data
+# # Load data without market indexes
+# # stock_data, stock_names, features_names = load_all_csv_data_without_index()
+
+# # Load data with market indexes
 # stock_data, stock_names, features_names = load_all_csv_data_with_market_indexes()
 
-# Print the shape of the data
-if stock_data is not None:
-    print("Data shape:", stock_data.shape)
-    print("Data loaded successfully.")
+# # Print the shape of the data
+# if stock_data is not None:
+#     print("Data shape:", stock_data.shape)
+#     print("Data loaded successfully.")
 
 
-# Size without market indexes: 224
-# Size with market indexes: 276
+# # Size without market indexes: 224
+# # Size with market indexes: 276
 
 
-# Split into train, val, test (80%, 10%, 10%)
-N = stock_data.shape[0]
-train_end = int(N * 0.8)
-val_end = int(N * 0.9)
+# # Split into train, val, test (80%, 10%, 10%)
+# N = stock_data.shape[0]
+# train_end = int(N * 0.8)
+# val_end = int(N * 0.9)
 
-dl_train = stock_data[:train_end]
-dl_valid = stock_data[train_end:val_end]
-dl_test = stock_data[val_end:]
+# dl_train = stock_data[:train_end]
+# dl_valid = stock_data[train_end:val_end]
+# dl_test = stock_data[val_end:]
 
-print("Train shape:", dl_train.shape)
-print("Val shape:", dl_valid.shape)
-print("Test shape:", dl_test.shape)
-
-
+# print("Train shape:", dl_train.shape)
+# print("Val shape:", dl_valid.shape)
+# print("Test shape:", dl_test.shape)
 
 
+
+#######################################################################################
 # Load data with market indexes
 # data_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes()
 
@@ -55,7 +156,7 @@ print("Test shape:", dl_test.shape)
 
 
 
-exit(1)
+# exit(1)
 
 
 
@@ -75,12 +176,12 @@ exit(1)
 
 universe = 'sp500'
 d_feat = 224
-d_model = 276
+d_model = 256
 t_nhead = 4
 s_nhead = 2
 dropout = 0.5
-gate_input_start_index = 158
-gate_input_end_index = 221
+gate_input_start_index = 224
+gate_input_end_index = 276
 
 if universe == 'sp500':
     beta = 5
@@ -100,7 +201,7 @@ ricir = []
 
 # Training
 ######################################################################################
-for seed in [0, 1, 2, 3, 4]:
+for seed in [0, 1]: #[0, 1, 2, 3, 4]:
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,

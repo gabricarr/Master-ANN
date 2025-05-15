@@ -96,3 +96,73 @@ def load_all_csv_data_with_market_indexes(
 
 
 
+
+
+
+
+# Qlib
+########################################################################
+import os, pandas as pd, numpy as np
+
+STOCK_DIR   = "data/enriched/sp500/csv"
+MKT_PATH    = "data/enriched/market_indexes_aggregated.csv"
+
+def csvs_to_qlib_df(stock_dir=STOCK_DIR, mkt_file=MKT_PATH):
+    # --- read market indices once -----------------------
+    mkt = (pd.read_csv(mkt_file)
+             .assign(datetime=lambda d: pd.to_datetime(d["Date"]))
+             .drop(columns=["Date"])
+             .set_index("datetime"))
+
+    frames = []
+    for fn in os.listdir(stock_dir):
+        if not fn.endswith(".csv"): continue
+        sym = os.path.splitext(fn)[0]          # “AAPL”, “MSFT”, …
+
+        df  = (pd.read_csv(os.path.join(stock_dir, fn))
+                 .drop(columns=["Stock_symbol"])
+                 .assign(datetime=lambda d: pd.to_datetime(d["Date"]))
+                 .drop(columns=["Date"])
+                 .merge(mkt, on="datetime"))
+
+        # simple next-day return label – replace by your own definition if needed
+        df["LABEL"] = df["Close"].pct_change().shift(-1)
+
+        df["instrument"] = sym
+        frames.append(df.set_index(["datetime", "instrument"]))
+
+    raw = (pd.concat(frames)
+             .sort_index())          # MultiIndex  (datetime, instrument)
+
+    return raw
+
+
+
+
+class PandasDataLoader:
+    """
+    Minimal loader for DataHandlerLP that serves an in-memory
+    (datetime, instrument) multi-indexed DataFrame.
+    """
+    def __init__(self, df):
+        self._df = df
+
+    # signature expected by DataHandler.load
+    def load(self, instruments=None, fields=None,
+             start_time=None, end_time=None, freq="day"):
+        # Ignore freq because we already aligned to 'day'.
+        df = self._df
+        if instruments is not None:
+            if isinstance(instruments, str):
+                instruments = [instruments]
+            df = df.loc[pd.IndexSlice[:, instruments], :]
+
+        if start_time is not None:
+            df = df.loc[pd.IndexSlice[start_time:], :]
+        if end_time is not None:
+            df = df.loc[pd.IndexSlice[:end_time], :]
+
+        if fields is not None:
+            df = df[fields]
+
+        return df
