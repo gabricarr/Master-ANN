@@ -54,24 +54,24 @@ df_raw[("label", "FWD_RET")] = (
 )
 
 last_date = dates.iloc[-1]
-df_raw = df_raw.drop(index=last_date, level="datetime")
+df_raw = df_raw.drop(index=last_date, level="datetime")   # We drop the last date
 
 # handler with learn / infer processors ------------------------
-# proc_feat = [
-#     {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
-#     {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
-# ]
-
-# proc_feat = [
-#     {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
-# ]
-
 proc_feat = [
-    {"class": "Fillna",          # <— correct name
-     "kwargs": {"fields_group": "feature", "fill_value": 0}},  # zero-fill; choose ffill/bfill/etc. if you like
-    # {"class": "CSZScoreNorm",
-    #  "kwargs": {"fields_group": "feature"}},
+    {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
+    # {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
 ]
+
+# proc_feat = [
+#     {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
+# ]
+
+# proc_feat = [
+#     {"class": "Fillna",          # <— correct name
+#      "kwargs": {"fields_group": "feature", "fill_value": 0}},  # zero-fill; choose ffill/bfill/etc. if you like
+#     {"class": "CSZScoreNorm",
+#      "kwargs": {"fields_group": "feature"}},
+# ]
 
 proc_label = [{"class": "DropnaLabel"}]
 
@@ -85,7 +85,7 @@ handler.fit_process_data()                 # learn z-scores, etc.
 # ------------------------------------------------------------
 # 2.  Attach time splits in a TSDatasetH
 split = {
-    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),
+    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),  # The first 8 are nan
     "valid": (dates.iloc[int(T*0.8)],     dates.iloc[int(T*0.9) - 1]),
     "test" : (dates.iloc[int(T*0.9)],     dates.iloc[-2]),
 }
