@@ -2,20 +2,34 @@ from master import MASTERModel
 import pickle
 import numpy as np
 import time
+import os
 
 # Please install qlib first before load the data.
 
 universe = 'csi300' # ['csi300','csi800']
 prefix = 'opensource' # ['original','opensource'], which training data are you using
-train_data_dir = f'data'
-with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
+train_data_dir = 'data'
+with open(os.path.join(train_data_dir, prefix, f"{universe}_dl_train.pkl"), 'rb') as f:
     dl_train = pickle.load(f)
 
-predict_data_dir = f'data\opensource'
-with open(f'{predict_data_dir}\{universe}_dl_valid.pkl', 'rb') as f:
+predict_data_dir = os.path.join('data', prefix)
+with open(os.path.join(predict_data_dir, f"{universe}_dl_valid.pkl"), 'rb') as f:
     dl_valid = pickle.load(f)
-with open(f'{predict_data_dir}\{universe}_dl_test.pkl', 'rb') as f:
+with open(os.path.join(predict_data_dir, f"{universe}_dl_test.pkl"), 'rb') as f:
     dl_test = pickle.load(f)
+
+
+# universe = 'csi300' # ['csi300','csi800']
+# prefix = 'opensource' # ['original','opensource'], which training data are you using
+# train_data_dir = f'data'
+# with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
+#     dl_train = pickle.load(f)
+
+# predict_data_dir = f'data\opensource'
+# with open(f'{predict_data_dir}\{universe}_dl_valid.pkl', 'rb') as f:
+#     dl_valid = pickle.load(f)
+# with open(f'{predict_data_dir}\{universe}_dl_test.pkl', 'rb') as f:
+#     dl_test = pickle.load(f)
 
 print("Data Loaded.")
 
@@ -46,7 +60,7 @@ ricir = []
 
 # Training
 ######################################################################################
-'''for seed in [0, 1, 2, 3, 4]:
+for seed in [0, 1]:
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
@@ -71,7 +85,7 @@ ricir = []
     ic.append(metrics['IC'])
     icir.append(metrics['ICIR'])
     ric.append(metrics['RIC'])
-    ricir.append(metrics['RICIR'])'''
+    ricir.append(metrics['RICIR'])
 ######################################################################################
 
 # Load and Test
