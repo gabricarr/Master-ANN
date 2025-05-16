@@ -134,7 +134,7 @@ class SequenceModel():
                 print(f"Pred: {pred}")
                 print(f"Loss: {loss}")
                 exit(1)
-
+            # print(f"Loss: {loss}")
             i += 1
 
 
