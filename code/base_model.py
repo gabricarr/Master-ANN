@@ -92,6 +92,7 @@ class SequenceModel():
         self.model.train()
         losses = []
 
+        i=0
         for data in data_loader:
             data = torch.squeeze(data, dim=0)
             '''
@@ -121,6 +122,20 @@ class SequenceModel():
             loss.backward()
             torch.nn.utils.clip_grad_value_(self.model.parameters(), 3.0)
             self.train_optimizer.step()
+
+            if i == 1:
+                # Print feature, label, pred, loss then exit
+                print(f"Feature shape: {feature.shape}")
+                print(f"Label shape: {label.shape}")
+                print(f"Pred shape: {pred.shape}")
+                print(f"Loss shape: {loss.shape}")
+                print(f"Feature: {feature}")
+                print(f"Label: {label}")
+                print(f"Pred: {pred}")
+                print(f"Loss: {loss}")
+                exit(1)
+
+            i += 1
 
         return float(np.mean(losses))
 
