@@ -33,8 +33,12 @@ stock_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes
 N, T, K   = stock_tensor.shape
 print("Shape: ", stock_tensor.shape)
 # dates     = pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+# dates = pd.to_datetime(                     # <-- NEW
+#     pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+# )
+
 dates = pd.to_datetime(                     # <-- NEW
-    pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+    pd.read_csv("data/normalized/market_indexes_aggregated_normalized.csv")["Date"]
 )
 
 # tensor ➜ tidy multi-index frame --------------------------------
@@ -54,12 +58,12 @@ df_raw[("label", "FWD_RET")] = (
 )
 
 last_date = dates.iloc[-1]
-df_raw = df_raw.drop(index=last_date, level="datetime")   # We drop the last date
+df_raw = df_raw.drop(index=last_date, level="datetime")
 
 # handler with learn / infer processors ------------------------
 proc_feat = [
     {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
-    # {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
+    # {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}}, # slows down debugging
 ]
 
 # proc_feat = [
@@ -85,7 +89,7 @@ handler.fit_process_data()                 # learn z-scores, etc.
 # ------------------------------------------------------------
 # 2.  Attach time splits in a TSDatasetH
 split = {
-    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),  # The first 8 are nan
+    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),
     "valid": (dates.iloc[int(T*0.8)],     dates.iloc[int(T*0.9) - 1]),
     "test" : (dates.iloc[int(T*0.9)],     dates.iloc[-2]),
 }
@@ -107,6 +111,7 @@ dl_test  = ts_ds.prepare("test")
 print(len(dl_train), len(dl_valid), len(dl_test))
 #  → continue with your for-loop over seeds exactly as before
 # ------------------------------------------------------------
+
 
 
 
@@ -237,14 +242,14 @@ for seed in [0, 1]: #[0, 1, 2, 3, 4]:
 ######################################################################################
 
 
-exit(1)
+
 
 
 
 # Load and Test
 ######################################################################################
 for seed in [0]:
-    param_path = f'model\{universe}_{prefix}_{seed}.pkl'
+    param_path = f'model/{universe}_{seed}.pkl'
 
     print(f'Model Loaded from {param_path}')
     model = MASTERModel(
