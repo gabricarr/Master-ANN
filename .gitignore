@@ -1,8 +1,20 @@
 /data
 
+MASTER_original/data
+
 /code/data
+enriched.zip
 
 /code_project_2/data
 
+code/with_bert/data
+code/with_bert/model
+
+code/without_bert/data
+code/without_bert/model
+
+code/with_bert/__pycache__
+code/without_bert/__pycache__
+MASTER_original/__pycache__
 
 code/model
