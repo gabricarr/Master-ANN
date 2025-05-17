@@ -51,14 +51,53 @@ def tensor_to_df(tensor, inst, feats, dt_index):
 
 df_raw = tensor_to_df(stock_tensor, stock_names, feature_names, dates)
 
-# optional: build a forward-return label
+# # OLD: build a forward-return label
+# df_raw[("label", "FWD_RET")] = (
+#     df_raw[("feature", "Adjusted Close")]
+#       .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
+# )
+
+# last_date = dates.iloc[-1]
+# df_raw = df_raw.drop(index=last_date, level="datetime")
+
+
+# MASTER uses a d-day rank-normalized return, which reflects each stock's relative performance within the market at a specific date
+# Steps: 
+# Look Ahead:
+# For each stock, MASTER looks a few days into the future (like 5 days) to see how much the price goes up or down.
+
+# Calculate Return:
+# It calculates the percentage change in price over those days — this is the raw return.
+
+# Compare Stocks:
+# On each day, it compares the returns of all stocks to see which ones performed better or worse.
+
+# Z-score Normalization:
+# It transforms those returns into standard scores (z-scores), so you know how each stock ranks relative to the others that day.
+
+# Final Label:
+# The model learns to predict this ranked performance score, not just the raw return.
+
+# Oss: “The lookback window length T and prediction interval d are set as 8 and 5 respectively.” -- MaSTER paper
+
+# Step 1: Compute d-day forward return
+d = 5  # prediction interval
 df_raw[("label", "FWD_RET")] = (
     df_raw[("feature", "Adjusted Close")]
-      .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
+      .groupby("instrument")
+      .shift(-d) / df_raw[("feature", "Adjusted Close")] - 1
 )
 
-last_date = dates.iloc[-1]
-df_raw = df_raw.drop(index=last_date, level="datetime")
+# Drop the last d rows since they can't have valid forward returns
+for i in range(d):
+    df_raw = df_raw.drop(index=dates.iloc[-(i+1)], level="datetime")
+
+# Step 2: Z-score normalization across stocks (per date)
+df_raw[("label", "Z_RET")] = (
+    df_raw[("label", "FWD_RET")]
+    .groupby("datetime")
+    .transform(lambda x: (x - x.mean()) / x.std())
+)
 
 # handler with learn / infer processors ------------------------
 proc_feat = [
