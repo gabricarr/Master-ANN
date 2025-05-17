@@ -14,7 +14,7 @@ def calc_ic(pred, label):
     return ic, ric
 
 def zscore(x):
-    return (x - x.mean()).div(x.std())
+    return (x - x.mean()).div(x.std() + 1e-8)  # Avoid division by zero
 
 def drop_extreme(x):
     sorted_tensor, indices = x.sort()
@@ -120,23 +120,23 @@ class SequenceModel():
 
             self.train_optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_value_(self.model.parameters(), 3.0)
+            # torch.nn.utils.clip_grad_value_(self.model.parameters(), 3.0)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.train_optimizer.step()
 
-            if i == 1:
+            # if i == 1:
                 # Print feature, label, pred, loss then exit
-                print(f"Feature shape: {feature.shape}")
-                print(f"Label shape: {label.shape}")
-                print(f"Pred shape: {pred.shape}")
-                print(f"Loss shape: {loss.shape}")
-                print(f"Feature: {feature}")
-                print(f"Label: {label}")
-                print(f"Pred: {pred}")
-                print(f"Loss: {loss}")
-                exit(1)
+                # print(f"Feature shape: {feature.shape}")
+                # print(f"Label shape: {label.shape}")
+                # print(f"Pred shape: {pred.shape}")
+                # print(f"Loss shape: {loss.shape}")
+                # print(f"Feature: {feature}")
+                # print(f"Label: {label}")
+                # print(f"Pred: {pred}")
+                # print(f"Loss: {loss}")
+                # exit(1)
             # print(f"Loss: {loss}")
             i += 1
-
 
         return float(np.mean(losses))
 
@@ -148,7 +148,6 @@ class SequenceModel():
             data = torch.squeeze(data, dim=0)
             feature = data[:, :, 0:-1].to(self.device)
             label = data[:, -1, -1].to(self.device)
-
 
             # You cannot drop extreme labels for test. 
             label = zscore(label)
@@ -166,7 +165,7 @@ class SequenceModel():
 
     def load_param(self, param_path):
         self.model.load_state_dict(torch.load(param_path, map_location=self.device))
-        self.fitted = 'Previously trained.'
+        self.fitted = 1
 
     def fit(self, dl_train, dl_valid=None):
         train_loader = self._init_data_loader(dl_train, shuffle=True, drop_last=True)

@@ -167,6 +167,10 @@ class Gate(nn.Module):
         output = self.trans(gate_input)
         output = torch.softmax(output/self.t, dim=-1)
         return self.d_output*output
+    
+        # Chabge to stabilize learning
+        # output = torch.softmax(output/self.t, dim=-1)
+        # return output   # keep the weights in [0,1] and Σw = 1
 
 
 class TemporalAttention(nn.Module):
@@ -218,10 +222,20 @@ class MASTER(nn.Module):
 
     def forward(self, x):
         src = x[:, :, :self.gate_input_start_index] # N, T, D
+
+
+
         gate_input = x[:, -1, self.gate_input_start_index:self.gate_input_end_index]
         src = src * torch.unsqueeze(self.feature_gate(gate_input), dim=1) # element wise multiplication [N, T, D] * [N, 1, D]
        
+        # print("src shape:", src.shape)
+        # print("src:", src)
+
+
         output = self.layers(src).squeeze(-1)
+
+        # print("output shape:", output.shape)
+        # print("output:", output)
 
         return output
 

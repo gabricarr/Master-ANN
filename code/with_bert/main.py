@@ -1,4 +1,4 @@
-from master_bert import MASTERModel
+from master import MASTERModel
 import pickle
 import numpy as np
 import time
@@ -33,8 +33,12 @@ stock_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes
 N, T, K   = stock_tensor.shape
 print("Shape: ", stock_tensor.shape)
 # dates     = pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+# dates = pd.to_datetime(                     # <-- NEW
+#     pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+# )
+
 dates = pd.to_datetime(                     # <-- NEW
-    pd.read_csv("data/enriched/market_indexes_aggregated.csv")["Date"]
+    pd.read_csv("data/normalized/market_indexes_aggregated_normalized.csv")["Date"]
 )
 
 # tensor ➜ tidy multi-index frame --------------------------------
@@ -47,19 +51,58 @@ def tensor_to_df(tensor, inst, feats, dt_index):
 
 df_raw = tensor_to_df(stock_tensor, stock_names, feature_names, dates)
 
-# optional: build a forward-return label
+# # OLD: build a forward-return label
+# df_raw[("label", "FWD_RET")] = (
+#     df_raw[("feature", "Adjusted Close")]
+#       .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
+# )
+
+# last_date = dates.iloc[-1]
+# df_raw = df_raw.drop(index=last_date, level="datetime")
+
+
+# MASTER uses a d-day rank-normalized return, which reflects each stock's relative performance within the market at a specific date
+# Steps: 
+# Look Ahead:
+# For each stock, MASTER looks a few days into the future (like 5 days) to see how much the price goes up or down.
+
+# Calculate Return:
+# It calculates the percentage change in price over those days — this is the raw return.
+
+# Compare Stocks:
+# On each day, it compares the returns of all stocks to see which ones performed better or worse.
+
+# Z-score Normalization:
+# It transforms those returns into standard scores (z-scores), so you know how each stock ranks relative to the others that day.
+
+# Final Label:
+# The model learns to predict this ranked performance score, not just the raw return.
+
+# Oss: “The lookback window length T and prediction interval d are set as 8 and 5 respectively.” -- MaSTER paper
+
+# Step 1: Compute d-day forward return
+d = 5  # prediction interval
 df_raw[("label", "FWD_RET")] = (
     df_raw[("feature", "Adjusted Close")]
-      .groupby("instrument").shift(-1) / df_raw[("feature", "Adjusted Close")] - 1
+      .groupby("instrument")
+      .shift(-d) / df_raw[("feature", "Adjusted Close")] - 1
 )
 
-last_date = dates.iloc[-1]
-df_raw = df_raw.drop(index=last_date, level="datetime")   # We drop the last date
+# Drop the last d rows since they can't have valid forward returns
+for i in range(d):
+    df_raw = df_raw.drop(index=dates.iloc[-(i+1)], level="datetime")
+
+# Step 2: Z-score normalization across stocks (per date)
+df_raw[("label", "Z_RET")] = (
+    df_raw[("label", "FWD_RET")]
+    .groupby("datetime")
+    .transform(lambda x: (x - x.mean()) / x.std())
+)
 
 # handler with learn / infer processors ------------------------
 proc_feat = [
     {"class": "DropnaProcessor", "kwargs": {"fields_group": "feature"}},
-    # {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}},
+    # {"class": "CSZScoreNorm",   "kwargs": {"fields_group": "feature"}}, # slows down debugging
 ]
 
 # proc_feat = [
@@ -85,7 +128,7 @@ handler.fit_process_data()                 # learn z-scores, etc.
 # ------------------------------------------------------------
 # 2.  Attach time splits in a TSDatasetH
 split = {
-    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),  # The first 8 are nan
+    "train": (dates.iloc[8],              dates.iloc[int(T*0.8) - 1]),
     "valid": (dates.iloc[int(T*0.8)],     dates.iloc[int(T*0.9) - 1]),
     "test" : (dates.iloc[int(T*0.9)],     dates.iloc[-2]),
 }
@@ -107,6 +150,7 @@ dl_test  = ts_ds.prepare("test")
 print(len(dl_train), len(dl_valid), len(dl_test))
 #  → continue with your for-loop over seeds exactly as before
 # ------------------------------------------------------------
+
 
 
 
@@ -208,7 +252,7 @@ ricir = []
 
 # Training
 ######################################################################################
-for seed in [0, 1]: #[0, 1, 2, 3, 4]:
+for seed in [0, 1, 2, 3, 4]:
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
@@ -237,14 +281,14 @@ for seed in [0, 1]: #[0, 1, 2, 3, 4]:
 ######################################################################################
 
 
-exit(1)
+
 
 
 
 # Load and Test
 ######################################################################################
 for seed in [0]:
-    param_path = f'model\{universe}_{prefix}_{seed}.pkl'
+    param_path = f'model/{universe}_{seed}.pkl'
 
     print(f'Model Loaded from {param_path}')
     model = MASTERModel(
