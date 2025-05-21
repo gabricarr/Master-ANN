@@ -22,6 +22,32 @@ cose da citare:
 
 
 
+TODO gcc:
+- usare un dataset di CSI300 per confrontare l'implementazione delle nostre feature con quelle originali e vedere chi fa meglio e come.
+
+
+
+
+
+Osservazioni su test set:
+- Nel modello il training va dal 2008 a maggio 2020, il validation da maggio 2020 a settembre 2021 e il test set da settembre 2021 a dicembre 2022.
+
+- Ora, se osserviamo l'sp500 abbiamo un anno, il 2022, dove le tendenze cambiano, ma nel 2020 e inizio 2021 le tendenze sono più o meno come quelle del training set.
+
+- Se calcoliamo le metriche nel validation set, allora tutto sembra andare bene e otteniamo buoni risultati, se invece usiamo il test set ora abbiamo metriche pessime e il modello non funziona (se fosse così facile predirre stock nessuno di noi sarebbe quì....)
+
+
+
+
+
+
+
+
+
+
+
+Idee:
+- Selezionare le best 10 dopo il training set e vedere come il guadagno si confronta con 10 scelte a caso.
 
 
 
