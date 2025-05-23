@@ -182,8 +182,7 @@ class SequenceModel():
                 best_param = copy.deepcopy(self.model.state_dict())
                 torch.save(best_param, f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
                 break
-        
-
+        torch.save(self.model.state_dict(), f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
         
 
     def predict(self, dl_test):
