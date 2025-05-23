@@ -170,6 +170,7 @@ class SequenceModel():
     def fit(self, dl_train, dl_valid=None):
         train_loader = self._init_data_loader(dl_train, shuffle=True, drop_last=True)
         best_param = None
+        saved = False
         for step in range(self.n_epochs):
             train_loss = self.train_epoch(train_loader)
             self.fitted = step
@@ -181,8 +182,10 @@ class SequenceModel():
             if train_loss <= self.train_stop_loss_thred:
                 best_param = copy.deepcopy(self.model.state_dict())
                 torch.save(best_param, f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
+                saved = True
                 break
-        torch.save(self.model.state_dict(), f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
+        if not saved:
+            torch.save(self.model.state_dict(), f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
         
 
     def predict(self, dl_test):
