@@ -1,4 +1,4 @@
-from master import MASTERModel
+from master_bert import MASTERModel
 import pickle
 import numpy as np
 import time
@@ -226,13 +226,13 @@ print(len(dl_train), len(dl_valid), len(dl_test))
 # print("Data Loaded.")
 
 universe = 'sp500'
-d_feat = 224
+d_feat = 227
 d_model = 256
 t_nhead = 4
 s_nhead = 2
 dropout = 0.5
-gate_input_start_index = 224
-gate_input_end_index = 276
+gate_input_start_index = 227
+gate_input_end_index = 279
 
 if universe == 'sp500':
     beta = 5

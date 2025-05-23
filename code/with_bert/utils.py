@@ -13,7 +13,11 @@ import torch
 # MKT_PATH    = "data/enriched/market_indexes_aggregated.csv"
 
 # Normalized
-STOCK_DIR   = "data/normalized/sp500/csv"
+# STOCK_DIR   = "data/normalized/sp500/csv"
+# MKT_PATH    = "data/normalized/market_indexes_aggregated_normalized.csv"
+
+# With sentiment
+STOCK_DIR   = "data/normalized/with_sentiment/sp500/csv"
 MKT_PATH    = "data/normalized/market_indexes_aggregated_normalized.csv"
 
 
