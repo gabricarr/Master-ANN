@@ -250,9 +250,13 @@ icir = []
 ric = []
 ricir = []
 
+# New metrics
+ar = []
+ir = []
+
 # Training
 ######################################################################################
-for seed in [0, 1, 2, 3, 4]:
+for seed in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
@@ -273,42 +277,47 @@ for seed in [0, 1, 2, 3, 4]:
     
     print('Seed: {:d} time cost : {:.2f} sec'.format(seed, running_time))
     print(metrics)
+    print("\n")
 
     ic.append(metrics['IC'])
     icir.append(metrics['ICIR'])
     ric.append(metrics['RIC'])
     ricir.append(metrics['RICIR'])
+    ar.append(metrics['AR'])
+    ir.append(metrics['IR'])
 ######################################################################################
 
 
 
 
 
+# This reloads the first model and reprints the metrics. Not needed as we already do it above
+# # Load and Test
+# ######################################################################################
+# for seed in [0]:
+#     param_path = f'model/{universe}_{seed}.pkl'
 
-# Load and Test
-######################################################################################
-for seed in [0]:
-    param_path = f'model/{universe}_{seed}.pkl'
+#     print(f'Model Loaded from {param_path}')
+#     model = MASTERModel(
+#             d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
+#             beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
+#             n_epochs=n_epoch, lr = lr, GPU = GPU, seed = seed, train_stop_loss_thred = train_stop_loss_thred,
+#             save_path='model/', save_prefix=universe
+#         )
+#     model.load_param(param_path)
+#     predictions, metrics = model.predict(dl_test)
+#     print(metrics)
 
-    print(f'Model Loaded from {param_path}')
-    model = MASTERModel(
-            d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
-            beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
-            n_epochs=n_epoch, lr = lr, GPU = GPU, seed = seed, train_stop_loss_thred = train_stop_loss_thred,
-            save_path='model/', save_prefix=universe
-        )
-    model.load_param(param_path)
-    predictions, metrics = model.predict(dl_test)
-    print(metrics)
-
-    ic.append(metrics['IC'])
-    icir.append(metrics['ICIR'])
-    ric.append(metrics['RIC'])
-    ricir.append(metrics['RICIR'])
+#     ic.append(metrics['IC'])
+#     icir.append(metrics['ICIR'])
+#     ric.append(metrics['RIC'])
+#     ricir.append(metrics['RICIR'])
     
-######################################################################################
+# ######################################################################################
 
 print("IC: {:.4f} pm {:.4f}".format(np.mean(ic), np.std(ic)))
 print("ICIR: {:.4f} pm {:.4f}".format(np.mean(icir), np.std(icir)))
 print("RIC: {:.4f} pm {:.4f}".format(np.mean(ric), np.std(ric)))
 print("RICIR: {:.4f} pm {:.4f}".format(np.mean(ricir), np.std(ricir)))
+print("AR: {:.4f} pm {:.4f}".format(np.mean(ar), np.std(ar)))
+print("IR: {:.4f} pm {:.4f}".format(np.mean(ir), np.std(ir)))

@@ -188,42 +188,113 @@ class SequenceModel():
             torch.save(self.model.state_dict(), f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
         
 
+    # Old, this does not have AR and IR
+    # def predict(self, dl_test):
+    #     if self.fitted<0:
+    #         raise ValueError("model is not fitted yet!")
+    #     else:
+    #         print('Epoch:', self.fitted)
+
+    #     test_loader = self._init_data_loader(dl_test, shuffle=False, drop_last=False)
+
+    #     preds = []
+    #     ic = []
+    #     ric = []
+
+    #     self.model.eval()
+    #     for data in test_loader:
+    #         data = torch.squeeze(data, dim=0)
+    #         feature = data[:, :, 0:-1].to(self.device)
+    #         label = data[:, -1, -1]
+            
+    #         # nan label will be automatically ignored when compute metrics.
+    #         # zscorenorm will not affect the results of ranking-based metrics.
+
+    #         with torch.no_grad():
+    #             pred = self.model(feature.float()).detach().cpu().numpy()
+    #         preds.append(pred.ravel())
+
+    #         daily_ic, daily_ric = calc_ic(pred, label.detach().numpy())
+    #         ic.append(daily_ic)
+    #         ric.append(daily_ric)
+
+    #     predictions = pd.Series(np.concatenate(preds), index=dl_test.get_index())
+
+
+
+
+
+    #     metrics = {
+    #         'IC': np.mean(ic),
+    #         'ICIR': np.mean(ic)/np.std(ic),
+    #         'RIC': np.mean(ric),
+    #         'RICIR': np.mean(ric)/np.std(ric)
+    #     }
+
+    #     return predictions, metrics
+
+
+
+
+    # ------------- NEW version -------------
     def predict(self, dl_test):
-        if self.fitted<0:
+        if self.fitted < 0:
             raise ValueError("model is not fitted yet!")
         else:
-            print('Epoch:', self.fitted)
+            print("Epoch:", self.fitted)
 
-        test_loader = self._init_data_loader(dl_test, shuffle=False, drop_last=False)
+        test_loader = self._init_data_loader(
+            dl_test, shuffle=False, drop_last=False
+        )
 
-        preds = []
-        ic = []
-        ric = []
+        preds, labels = [], []       # collect predictions AND raw labels
+        ic, ric = [], []
 
         self.model.eval()
         for data in test_loader:
             data = torch.squeeze(data, dim=0)
+
             feature = data[:, :, 0:-1].to(self.device)
-            label = data[:, -1, -1]
-            
-            # nan label will be automatically ignored when compute metrics.
-            # zscorenorm will not affect the results of ranking-based metrics.
+            label   = data[:, -1, -1]          # raw forward return
 
             with torch.no_grad():
-                pred = self.model(feature.float()).detach().cpu().numpy()
-            preds.append(pred.ravel())
+                pred = self.model(feature.float()).cpu().numpy()
 
-            daily_ic, daily_ric = calc_ic(pred, label.detach().numpy())
+            preds.append(pred.ravel())
+            labels.append(label.cpu().numpy().ravel())
+
+            daily_ic, daily_ric = calc_ic(pred, label.numpy())
             ic.append(daily_ic)
             ric.append(daily_ric)
 
-        predictions = pd.Series(np.concatenate(preds), index=dl_test.get_index())
+        # ------------------------------------------------------------------
+        # series with multi-index (datetime, instrument)
+        idx           = dl_test.get_index()
+        predictions   = pd.Series(np.concatenate(preds),  index=idx)
+        label_series  = pd.Series(np.concatenate(labels), index=idx)
+
+        # ---------- AR & IR calculation ----------
+        daily_port_ret = []                   # equal-weight portfolio return per day
+        for dt, pred_slice in predictions.groupby(level="datetime"):
+            top30_idx = pred_slice.nlargest(30).index      # top-30 by prediction
+            daily_ret = label_series.loc[top30_idx].mean() # equally weighted
+            daily_port_ret.append(daily_ret)
+
+        daily_port_ret = np.array(daily_port_ret)
+        ann_factor = 1                                # trading days 
+        AR = daily_port_ret.mean() * ann_factor
+        IR = (
+            daily_port_ret.mean() / (daily_port_ret.std() + 1e-12)
+        ) * np.sqrt(ann_factor)
+        # ------------------------------------------
 
         metrics = {
-            'IC': np.mean(ic),
-            'ICIR': np.mean(ic)/np.std(ic),
-            'RIC': np.mean(ric),
-            'RICIR': np.mean(ric)/np.std(ric)
+            "IC":     np.mean(ic),
+            "ICIR":   np.mean(ic)  / np.std(ic),
+            "RIC":    np.mean(ric),
+            "RICIR":  np.mean(ric) / np.std(ric),
+            "AR":     AR,
+            "IR":     IR,
         }
 
         return predictions, metrics
