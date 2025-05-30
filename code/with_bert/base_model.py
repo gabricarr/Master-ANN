@@ -292,12 +292,12 @@ class SequenceModel():
         daily_bench_ret = np.array(daily_bench_ret)
 
         # AR and tracking error
-        active_ret = daily_port_ret - daily_bench_ret
+        a_ret = daily_port_ret - daily_bench_ret
 
         # AR and IR
-        AR = active_ret.mean()
-        tracking_error = active_ret.std()
-        IR = (active_ret.mean() / (tracking_error + 1e-12))
+        AR = a_ret.mean()
+        tracking_error = a_ret.std()
+        IR = (a_ret.mean() / (tracking_error + 1e-12))
         # ------------------------------------------
 
         metrics = {
