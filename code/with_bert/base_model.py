@@ -186,8 +186,6 @@ class SequenceModel():
                 break
         if not saved:
             torch.save(self.model.state_dict(), f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
-       
-
         
 
     # Old, this does not have AR and IR
@@ -237,8 +235,6 @@ class SequenceModel():
 
 
 
-
-    # ------------- NEW version -------------
     def predict(self, dl_test):
         if self.fitted < 0:
             raise ValueError("model is not fitted yet!")
@@ -270,24 +266,38 @@ class SequenceModel():
             ric.append(daily_ric)
 
         # ------------------------------------------------------------------
-        # series with multi-index (datetime, instrument)
-        idx           = dl_test.get_index()
-        predictions   = pd.Series(np.concatenate(preds),  index=idx)
-        label_series  = pd.Series(np.concatenate(labels), index=idx)
+        # Assuming predictions and labels have the same multi-index: (datetime, instrument)
+        idx = dl_test.get_index()
+        predictions = pd.Series(np.concatenate(preds), index=idx)
+        label_series = pd.Series(np.concatenate(labels), index=idx)
 
-        # ---------- AR & IR calculation ----------
-        daily_port_ret = []                   # equal-weight portfolio return per day
+        daily_port_ret = []
+        daily_bench_ret = []
+
+        # Loop over each datetime
         for dt, pred_slice in predictions.groupby(level="datetime"):
-            top30_idx = pred_slice.nlargest(30).index      # top-30 by prediction
-            daily_ret = label_series.loc[top30_idx].mean() # equally weighted
-            daily_port_ret.append(daily_ret)
+            label_slice = label_series.loc[dt]
+            
+            # Portfolio return: top-30 by prediction
+            top30_idx = pred_slice.nlargest(30).index
+            port_ret = label_series.loc[top30_idx].mean()
+            daily_port_ret.append(port_ret)
 
+            # Benchmark: equal-weight return across all instruments
+            bench_ret = label_slice.mean()
+            daily_bench_ret.append(bench_ret)
+
+        # Convert to numpy arrays
         daily_port_ret = np.array(daily_port_ret)
-        ann_factor = 1                                # trading days 
-        AR = daily_port_ret.mean() * ann_factor
-        IR = (
-            daily_port_ret.mean() / (daily_port_ret.std() + 1e-12)
-        ) * np.sqrt(ann_factor)
+        daily_bench_ret = np.array(daily_bench_ret)
+
+        # AR and tracking error
+        active_ret = daily_port_ret - daily_bench_ret
+
+        # AR and IR
+        AR = active_ret.mean()
+        tracking_error = active_ret.std()
+        IR = (active_ret.mean() / (tracking_error + 1e-12))
         # ------------------------------------------
 
         metrics = {

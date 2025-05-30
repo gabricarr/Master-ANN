@@ -148,82 +148,11 @@ dl_test  = ts_ds.prepare("test")
 
 
 print(len(dl_train), len(dl_valid), len(dl_test))
-#  → continue with your for-loop over seeds exactly as before
 # ------------------------------------------------------------
 
 
 
 
-
-
-#############################################################################
-# # Pure tensor data
-# # Load data without market indexes
-# # stock_data, stock_names, features_names = load_all_csv_data_without_index()
-
-# # Load data with market indexes
-# stock_data, stock_names, features_names = load_all_csv_data_with_market_indexes()
-
-# # Print the shape of the data
-# if stock_data is not None:
-#     print("Data shape:", stock_data.shape)
-#     print("Data loaded successfully.")
-
-
-# # Size without market indexes: 224
-# # Size with market indexes: 276
-
-
-# # Split into train, val, test (80%, 10%, 10%)
-# N = stock_data.shape[0]
-# train_end = int(N * 0.8)
-# val_end = int(N * 0.9)
-
-# dl_train = stock_data[:train_end]
-# dl_valid = stock_data[train_end:val_end]
-# dl_test = stock_data[val_end:]
-
-# print("Train shape:", dl_train.shape)
-# print("Val shape:", dl_valid.shape)
-# print("Test shape:", dl_test.shape)
-
-
-
-#######################################################################################
-# Load data with market indexes
-# data_tensor, stock_names, feature_names = load_all_csv_data_with_market_indexes()
-
-# print("Data shape:", data_tensor.shape)
-
-# import pandas as pd
-# # Get dates from one of the CSVs (assuming all have the same dates)
-# sample_csv = 'data/enriched/market_indexes_aggregated.csv'
-# dates = pd.read_csv(sample_csv)['Date'].tolist()
-
-
-
-
-
-
-
-
-# exit(1)
-
-
-
-# universe = 'sp500' # ['csi300','csi800']
-# prefix = 'opensource' # ['original','opensource'], which training data are you using
-# train_data_dir = f'data'
-# with open(f'{train_data_dir}\{prefix}\{universe}_dl_train.pkl', 'rb') as f:
-#     dl_train = pickle.load(f)
-
-# predict_data_dir = f'data\opensource'
-# with open(f'{predict_data_dir}\{universe}_dl_valid.pkl', 'rb') as f:
-#     dl_valid = pickle.load(f)
-# with open(f'{predict_data_dir}\{universe}_dl_test.pkl', 'rb') as f:
-#     dl_test = pickle.load(f)
-
-# print("Data Loaded.")
 
 universe = 'sp500'
 d_feat = 227
@@ -256,7 +185,7 @@ ir = []
 
 # Training
 ######################################################################################
-for seed in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
+for seed in [i for i in range(100)]:  
     model = MASTERModel(
         d_feat = d_feat, d_model = d_model, t_nhead = t_nhead, s_nhead = s_nhead, T_dropout_rate=dropout, S_dropout_rate=dropout,
         beta=beta, gate_input_end_index=gate_input_end_index, gate_input_start_index=gate_input_start_index,
@@ -314,10 +243,39 @@ for seed in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
 #     ricir.append(metrics['RICIR'])
     
 # ######################################################################################
+from scipy.stats import t
 
-print("IC: {:.4f} pm {:.4f}".format(np.mean(ic), np.std(ic)))
-print("ICIR: {:.4f} pm {:.4f}".format(np.mean(icir), np.std(icir)))
-print("RIC: {:.4f} pm {:.4f}".format(np.mean(ric), np.std(ric)))
-print("RICIR: {:.4f} pm {:.4f}".format(np.mean(ricir), np.std(ricir)))
-print("AR: {:.4f} pm {:.4f}".format(np.mean(ar), np.std(ar)))
-print("IR: {:.4f} pm {:.4f}".format(np.mean(ir), np.std(ir)))
+# Sample size
+n = len(ic)
+
+# Degrees of freedom
+df = n - 1
+
+# t critical value for 95% confidence
+t_crit = t.ppf(0.975, df)  # two-tailed
+
+# Function to compute mean and 95% CI error
+def ci_95(arr):
+    mean = np.mean(arr)
+    se = np.std(arr, ddof=1) / np.sqrt(len(arr))
+    margin = t_crit * se
+    return mean, margin
+
+# Print each metric with 95% CI
+print("IC: {:.4f} pm {:.4f}".format(*ci_95(ic)))
+print("ICIR: {:.4f} pm {:.4f}".format(*ci_95(icir)))
+print("RIC: {:.4f} pm {:.4f}".format(*ci_95(ric)))
+print("RICIR: {:.4f} pm {:.4f}".format(*ci_95(ricir)))
+print("AR: {:.4f} pm {:.4f}".format(*ci_95(ar)))
+print("IR: {:.4f} pm {:.4f}".format(*ci_95(ir)))
+
+
+
+
+
+# print("IC: {:.4f} pm {:.4f}".format(np.mean(ic), np.std(ic)))
+# print("ICIR: {:.4f} pm {:.4f}".format(np.mean(icir), np.std(icir)))
+# print("RIC: {:.4f} pm {:.4f}".format(np.mean(ric), np.std(ric)))
+# print("RICIR: {:.4f} pm {:.4f}".format(np.mean(ricir), np.std(ricir)))
+# print("AR: {:.4f} pm {:.4f}".format(np.mean(ar), np.std(ar)))
+# print("IR: {:.4f} pm {:.4f}".format(np.mean(ir), np.std(ir)))
