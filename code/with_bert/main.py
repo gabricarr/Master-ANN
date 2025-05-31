@@ -168,7 +168,7 @@ if universe == 'sp500':
 else:
     raise ValueError("Invalid universe")
 
-n_epoch = 1
+n_epoch = 5
 lr = 1e-5
 GPU = 0
 train_stop_loss_thred = 0.95
