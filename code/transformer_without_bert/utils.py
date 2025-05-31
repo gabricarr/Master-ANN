@@ -7,9 +7,19 @@ import pandas as pd
 import numpy as np
 import torch
 
+
+# Original
+# STOCK_DIR   = "data/enriched/sp500/csv"
+# MKT_PATH    = "data/enriched/market_indexes_aggregated.csv"
+
+# Normalized
+STOCK_DIR   = "data/normalized/sp500/csv"
+MKT_PATH    = "data/normalized/market_indexes_aggregated_normalized.csv"
+
+
 # This loads all CSV files in the given folder into a tensor of shape (N, T, K),
 # Without market information
-def load_all_csv_data_without_index(data_folder='data/enriched/sp500/csv'):
+def load_all_csv_data_without_index(data_folder=STOCK_DIR):
     """
     Loads all CSV files in the given folder into a tensor of shape (N, T, K),
     where N = number of stocks (files), T = timesteps, K = features.
@@ -43,8 +53,8 @@ def load_all_csv_data_without_index(data_folder='data/enriched/sp500/csv'):
 
 
 def load_all_csv_data_with_market_indexes(
-    data_folder='data/enriched/sp500/csv',
-    market_indexes_path='data/enriched/market_indexes_aggregated.csv'
+    data_folder=STOCK_DIR,
+    market_indexes_path=MKT_PATH
 ):
     """
     Loads all CSV files in the given folder into a tensor of shape (N, T, K),
@@ -104,8 +114,7 @@ def load_all_csv_data_with_market_indexes(
 ########################################################################
 import os, pandas as pd, numpy as np
 
-STOCK_DIR   = "data/enriched/sp500/csv"
-MKT_PATH    = "data/enriched/market_indexes_aggregated.csv"
+
 
 def csvs_to_qlib_df(stock_dir=STOCK_DIR, mkt_file=MKT_PATH):
     # --- read market indices once -----------------------

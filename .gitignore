@@ -15,6 +15,17 @@ code/without_bert/model
 
 code/with_bert/__pycache__
 code/without_bert/__pycache__
+
+code/transformer_with_bert/data
+code/transformer_with_bert/model
+
+code/transformer_without_bert/data
+code/transformer_without_bert/model
+
+code/transformer_with_bert/__pycache__
+code/transformer_without_bert/__pycache__
+
+
 MASTER_original/__pycache__
 
 code/model
